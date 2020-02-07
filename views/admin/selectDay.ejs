@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../include/head') -%>
+    <link rel='stylesheet' href='/stylesheets/admin/selectDay.css' />
+  </head>
+  <body>
+    <%- include('../include/header') -%>
+    <main class="page-main">
+      <article class="selectDay">
+        <div class="outer-container">
+          <div class="inner-container">
+            <form action="/admin/selectDay" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div class="form-group">
+                  本日は<br>
+                  <select name="day" class="w-50 custom-select custom-select-lg">
+                      <% var selected = (values.day == 0 ? 'selected': ''); %>
+                      <option value=0 <%= selected %>>--選択して下さい。--</option>
+                    <% for(let i = 1; i <= tournament.days; i++) { %>
+                      <% selected = (values.day == i ? 'selected': ''); %>
+                      <option value=<%= i %> <%= selected %>>大会<%= i %>日目</option>
+                    <% } %>
+                  </select><br>
+                  の競技を行います。
+              </div>
+              <div class="form-group">
+                <input type="submit" value="選択" class="btn btn-secondary"/>
+              </div>
+            </form>
+          </div>
+        </div>
+      </article>
+      <section class="message-container">
+        <p class="error"><%= error %></p>
+      </section>
+    </main>  
+    <%- include('../include/footer') %>
+  </body>
+</html>

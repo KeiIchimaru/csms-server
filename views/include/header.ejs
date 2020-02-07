@@ -1,0 +1,20 @@
+<header class="page-header">
+    <div class="page-header-container w-100">
+        <div class="row pl-2 pr-2">
+            <div class="col w-75 text-left">
+                <% include ../include/utils %>
+                <%
+                    let from = fmtDateYMD(tournament.period_from);
+                    let to = fmtDateYMD(tournament.period_to);
+                    let period = (from == to ? from : (from + "〜" + to));
+                %>
+                <%= tournament.name %>(<%= period %>)    
+            </div>
+            <% if(title != 'Login'){ %>
+            <div class="col text-right">
+                <a href="/logout">Logout</a>
+            </div>
+            <% } %>
+        </div>
+    </div>    
+</header>

@@ -1,0 +1,28 @@
+@charset "utf-8";
+/* CSS Document */
+body {
+  font: 14px "Lucida Grande", Helvetica, Arial, sans-serif;
+}
+a {
+  color: #00B7FF;
+}
+.page-header {
+  width: 100%;
+  color: gray;
+  font-size: 0.8rem;
+  text-align: right;
+  background-color: rgb(230, 230, 230);
+}
+.page-footer {
+  width: 100%;
+  color: gray;
+  font-size: 0.6rem;
+	text-align: center;
+}
+.message-container {
+	text-align: center;
+}
+.error {
+  color: red;
+  font-weight: bold;
+}

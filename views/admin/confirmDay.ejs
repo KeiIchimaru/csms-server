@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../include/head') -%>
+    <link rel='stylesheet' href='/stylesheets/admin/selectDay.css' />
+  </head>
+  <body>
+    <%- include('../include/header') -%>
+    <main class="page-main">
+      <article class="selectDay">
+        <div class="outer-container">
+          <div class="inner-container">
+            <form action="/admin/confirmDay" method="post">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+              <div class="form-group">
+                  本日は<br>
+                  大会<%= values.day %>日目<br>
+                  の競技でよろしいですか？
+              </div>
+              <div class="form-group">
+                <input type="button" value="戻る" class="btn btn-secondary mr-5" onclick="location.href='/admin/selectDay'" />
+                <input type="submit" value="確認" class="btn btn-secondary"/>
+              </div>
+            </form>
+          </div>
+        </div>
+      </article>
+      <section class="message-container">
+        <p class="error"><%= error %></p>
+      </section>
+    </main>  
+    <%- include('../include/footer') %>
+  </body>
+</html>

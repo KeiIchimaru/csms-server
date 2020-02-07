@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <%- include('../include/head') -%>
+    <link rel='stylesheet' href='/stylesheets/account/login.css' />
+  </head>
+  <body>
+    <%- include('../include/header') -%>
+    <main class="page-main">
+      <article class="login">
+        <form action="/account/login" method="post">
+          <input type="hidden" name="_csrf" value="<%= csrfToken %>">
+          <div class="login-userid">
+              <label>ユーザーID：</label>
+              <input type="text" name="username" value='<%= username %>'/>
+          </div>
+          <div class="login-password">
+              <label>パスワード：</label>
+              <input type="password" name="password"/>
+          </div>
+          <div class="login-button">
+              <input type="submit" value="ログイン" class="btn btn-secondary"/>
+          </div>
+        </form>
+      </article>
+      <section class="message-container">
+        <p class="error"><%= error %></p>
+      </section>
+    </main>  
+    <%- include('../include/footer') %>
+  </body>
+</html>
