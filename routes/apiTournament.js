@@ -12,11 +12,12 @@ router.get('/composition/tournamentEvent', (req, res, next) => {
 router.get('/management/day', (req, res, next) => {
   res.json({ day: global.tournament.management.day });
 });
-router.get('/management/subdivisions/:gender/:classification', (req, res, next) => {
+router.get('/management/subdivisions/:gender/:classification/:event', (req, res, next) => {
   global.tournament.management.getParticipatingPlayer(
     global.tournament.management.day,
     req.params.gender,
-    req.params.classification
+    req.params.classification,
+    req.params.event
   ).then(results => {
     res.json(results);
   }).catch(err => {
