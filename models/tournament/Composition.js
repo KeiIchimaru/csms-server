@@ -1,25 +1,63 @@
+const { copyDict } = require("../../lib/utils");
 
 async function _getTournament(conn) {
   let sql = 'SELECT * FROM viewTournament';
   const results = await conn.query(sql);
   return results[0];
 }
-
 async function _getTournamentEvent(conn) {
   let sql = 'SELECT * FROM viewTournamentEvent';
   const results = await conn.query(sql);
   return results;
 }
-
 async function _getEntryOrganization(conn) {
   let sql = 'SELECT * FROM viewEntryOrganization';
   const results = await conn.query(sql);
   return results;
 }
-
 async function _getEntryPlayer(conn) {
   let sql = 'SELECT * FROM viewEntryPlayer';
   const results = await conn.query(sql);
+  return results;
+}
+async function _getParticipatingPlayers(conn, gender, subdivision, group) {
+  // 対象選手の抽出
+  let sql = 'SELECT * FROM viewParticipatingPlayer WHERE s_gender = ?';
+  let order = ' ORDER BY s_number ASC, c_number ASC, p_sequence ASC';
+  let params = [ gender, ];
+  if(!(subdivision === undefined) && subdivision){
+    sql += ' AND s_id = ?';
+    params.push(subdivision);
+  }
+  if(!(group === undefined) && group){
+    sql += ' AND c_id = ?';
+    params.push(group);    
+  }
+  sql += order;
+  const participatingPlayers = await conn.query(sql, params);
+  // 選手情報の取得
+  let bibs = [];
+  participatingPlayers.forEach((row) => {
+    bibs.push(row.p_bibs);
+  });
+  sql = 'SELECT * FROM viewEntryPlayer WHERE gender = ? AND bibs in (?) ORDER BY player_id';
+  params = [ gender, bibs ];
+  const entryPlayers = await conn.query(sql, params);
+  // 現在の採点結果の取得
+  let results = {};
+  for(let i = 0; i < entryPlayers.length; i++) {
+    let row = entryPlayers[i];
+    sql = 'SELECT * FROM viewTournamentEventResult WHERE bibs = ? ORDER BY event_id';
+    params = [ row.bibs, ];
+    const eventResult = await conn.query(sql, params);
+    scores = {};
+    for(let j = 0; j < eventResult.length; j++) {
+      scores[scores[j].event_id] = copyDict(scores[j]);
+    }
+    let data = copyDict(row);
+    data['scores'] = scores;
+    results[row.bibs] = data;
+  };
   return results;
 }
 
@@ -49,6 +87,13 @@ class Composition {
   }
   get days() {
     return this._tournament.days;
+  }
+  // DBアクセスメソッド
+  async getParticipatingPlayers(gender, subdivision, group) {
+    let conn = await global.pool.getConnection();
+    const results = await _getParticipatingPlayers(conn, gender, subdivision, group);
+    await global.pool.releaseConnection(conn);
+    return results;
   }
 };
 

@@ -1,9 +1,9 @@
 const { InternalServerError } = require(global.base_path+'/lib/error');
 
-async function _getParticipatingPlayer(conn, day, gender, classification, event) {
-  let sql = 'SELECT * FROM viewParticipatingPlayer where s_acting_day = ? and s_gender = ? and s_classification = ? and a_event_id = ?';
+async function _getParticipatingPlayerEventOrder(conn, day, gender, classification, event) {
+  let sql = 'SELECT * FROM viewParticipatingPlayerEventOrder where s_acting_day = ? and s_gender = ? and s_classification = ? and a_event_id = ?';
   sql += ' order by s_number ASC, a_sequence ASC, c_number ASC, p_sequence ASC';
-  let params = [ day, parseInt(gender), parseInt(classification), parseInt(event) ];
+  let params = [ day, gender, classification, event ];
   const results = await conn.query(sql, params);
   return results;
 }
@@ -27,9 +27,9 @@ class Management {
     return this._initialized;
   }
   // DBアクセスメソッド
-  async getParticipatingPlayer(day, gender, classification, event) {
+  async getParticipatingPlayerEventOrder(day, gender, classification, event) {
     let conn = await global.pool.getConnection();
-    const results = await _getParticipatingPlayer(conn, day, gender, classification, event);
+    const results = await _getParticipatingPlayerEventOrder(conn, day, gender, classification, event);
     await global.pool.releaseConnection(conn);
     return results;
   }
