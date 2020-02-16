@@ -20,28 +20,32 @@ async function _getEntryPlayer(conn) {
   const results = await conn.query(sql);
   return results;
 }
-async function _getParticipatingPlayers(conn, gender, subdivision, group) {
+async function _getParticipatingPlayers(conn, gender, { subdivision, group, bibs } = {}) {
   // 対象選手の抽出
   let sql = 'SELECT * FROM viewParticipatingPlayer WHERE s_gender = ?';
-  let order = ' ORDER BY s_number ASC, c_number ASC, p_sequence ASC';
+  let order = ' ORDER BY s_number ASC, c_number ASC, p_bibs ASC';
   let params = [ gender, ];
-  if(!(subdivision === undefined) && subdivision){
+  if(!(subdivision === undefined) && subdivision) {
     sql += ' AND s_id = ?';
     params.push(subdivision);
   }
-  if(!(group === undefined) && group){
+  if(!(group === undefined) && group) {
     sql += ' AND c_id = ?';
     params.push(group);    
+  }
+  if(!(bibs === undefined) && bibs) {
+    sql += ' AND p_bibs = ?';
+    params.push(bibs);    
   }
   sql += order;
   const participatingPlayers = await conn.query(sql, params);
   // 選手情報の取得
-  let bibs = [];
+  let participatingPlayersBibs = [];
   participatingPlayers.forEach((row) => {
-    bibs.push(row.p_bibs);
+    participatingPlayersBibs.push(row.p_bibs);
   });
   sql = 'SELECT * FROM viewEntryPlayer WHERE gender = ? AND bibs in (?) ORDER BY player_id';
-  params = [ gender, bibs ];
+  params = [ gender, participatingPlayersBibs ];
   const entryPlayers = await conn.query(sql, params);
   // 現在の採点結果の取得
   let results = {};
@@ -89,9 +93,9 @@ class Composition {
     return this._tournament.days;
   }
   // DBアクセスメソッド
-  async getParticipatingPlayers(gender, subdivision, group) {
+  async getParticipatingPlayers(gender, { subdivision, group, bibs } = {}) {
     let conn = await global.pool.getConnection();
-    const results = await _getParticipatingPlayers(conn, gender, subdivision, group);
+    const results = await _getParticipatingPlayers(conn, gender, subdivision=subdivision, group=group, bibs=bibs);
     await global.pool.releaseConnection(conn);
     return results;
   }
