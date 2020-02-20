@@ -20,7 +20,13 @@ async function _getEntryPlayer(conn) {
   const results = await conn.query(sql);
   return results;
 }
-async function _getParticipatingPlayers(conn, gender, { subdivision, group, bibs } = {}) {
+async function _getTournamentEventResult(conn, tournamentId, playerId, eventId, classificationId) {
+  let sql = 'SELECT * FROM tournament_event_result WHERE tournament_id = ? AND player_id = ? AND event_id = ? AND classification = ?';
+  let params = [ tournamentId, playerId, eventId, classificationId ];
+  const results = await conn.query(sql, params);
+  return results;
+}
+async function _getParticipatingPlayers(conn, { gender, subdivision, group, bibs } = {}) {
   // 対象選手の抽出
   let sql = 'SELECT * FROM viewParticipatingPlayer WHERE s_gender = ?';
   let order = ' ORDER BY s_number ASC, c_number ASC, p_bibs ASC';
@@ -51,12 +57,12 @@ async function _getParticipatingPlayers(conn, gender, { subdivision, group, bibs
   let results = {};
   for(let i = 0; i < entryPlayers.length; i++) {
     let row = entryPlayers[i];
-    sql = 'SELECT * FROM viewTournamentEventResult WHERE bibs = ? ORDER BY event_id';
-    params = [ row.bibs, ];
+    sql = 'SELECT * FROM viewTournamentEventResult WHERE player_id = ? ORDER BY event_id';
+    params = [ row.player_id, ];
     const eventResult = await conn.query(sql, params);
     scores = {};
     for(let j = 0; j < eventResult.length; j++) {
-      scores[scores[j].event_id] = copyDict(scores[j]);
+      scores[eventResult[j].event_id] = copyDict(eventResult[j]);
     }
     let data = copyDict(row);
     data['scores'] = scores;
@@ -93,12 +99,79 @@ class Composition {
     return this._tournament.days;
   }
   // DBアクセスメソッド
-  async getParticipatingPlayers(gender, { subdivision, group, bibs } = {}) {
+  async getParticipatingPlayers({ gender, subdivision, group, bibs } = {}) {
     let conn = await global.pool.getConnection();
-    const results = await _getParticipatingPlayers(conn, gender, subdivision=subdivision, group=group, bibs=bibs);
+    const results = await _getParticipatingPlayers(conn, { gender, subdivision, group, bibs });
     await global.pool.releaseConnection(conn);
     return results;
   }
+  async registerTournamentEventResult(body) {
+    let h = body.header;
+    let conn = await global.pool.getConnection();
+    const results = await _getTournamentEventResult(conn, this._tournament.id, h.player, h.event, h.classification);
+    let sql;
+    let params;
+    let event_time =  (this._tournament.performance_type == 1 ? null : body.input.score);
+    let event_score = (this._tournament.performance_type == 1 ? body.input.score : null);
+    let remarks = null;
+    if(results.length == 0) {
+      sql = 'INSERT INTO tournament_event_result (\
+        tournament_id,\
+        player_id,\
+        event_id,\
+        classification,\
+        gender,\
+        entry_organization_id,\
+        bibs,\
+        event_time,\
+        event_score,\
+        constitution,\
+        remarks\
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      params = [
+        this._tournament.id,
+        h.player,
+        h.event,
+        h.classification,
+        h.gender,
+        h.entry_organization_id,
+        h.bibs,
+        event_time,
+        event_score,
+        JSON.stringify(body.input),
+        remarks
+      ];
+    } else {
+      sql = 'UPDATE tournament_event_result SET \
+        bibs = ?,\
+        event_time = ?,\
+        event_score= ?,\
+        constitution = ?,\
+        remarks = ?\
+      ) WHERE\
+        tournament_id = ? AND\
+        player_id = ? AND\
+        event_id = ? AND\
+        classification = ?\
+      ';
+      params = [
+        h.bibs,
+        event_time,
+        event_score,
+        JSON.stringify(body.input),
+        remarks,
+        this._tournament.id,
+        h.player,
+        h.event,
+        h.classification
+      ];
+    }
+    await conn.query(sql, params);
+  }
+  async confirmTournamentEventResult(address, user, body) {
+
+  }
+
 };
 
 module.exports = Composition;
