@@ -148,7 +148,7 @@ class Composition {
         event_score= ?,\
         constitution = ?,\
         remarks = ?\
-      ) WHERE\
+       WHERE\
         tournament_id = ? AND\
         player_id = ? AND\
         event_id = ? AND\
