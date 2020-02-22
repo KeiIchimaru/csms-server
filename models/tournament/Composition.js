@@ -167,11 +167,37 @@ class Composition {
       ];
     }
     await conn.query(sql, params);
+    await global.pool.releaseConnection(conn);
   }
   async confirmTournamentEventResult(address, user, body) {
-
+    let h = body.header;
+    let now = new Date();
+    let conn = await global.pool.getConnection();
+    let sql = '\
+    UPDATE tournament_event_result SET \
+      confirmed_user = ?,\
+      confirmed_time = ?,\
+      confirmed_device = ? \
+    WHERE \
+      tournament_id = ? AND\
+      event_id = ? AND\
+      classification = ? AND\
+      player_id in (?) AND\
+      (event_time is NOT null OR event_score is NOT null) AND\
+      confirmed_user is null\
+    ';
+    let params = [
+      user.id,
+      now,
+      address,
+      this._tournament.id,
+      h.event,
+      h.classification,
+      body.players
+    ];
+    await conn.query(sql, params);
+    await global.pool.releaseConnection(conn);
   }
-
 };
 
 module.exports = Composition;

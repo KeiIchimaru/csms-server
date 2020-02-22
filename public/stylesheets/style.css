@@ -26,3 +26,23 @@ a {
   color: red;
   font-weight: bold;
 }
+.error-page {
+  width: 60%;
+  margin: 0 auto;
+}
+.error-header {
+  font-size: 2.0rem;
+}
+.error-body {
+  font-size: 1.5rem;
+  margin-left: 20px;  
+  padding: 10px;
+  border: 1px black solid;
+}
+.error-footer {
+  color: blue;
+  font-size: 1.5rem;
+  font-weight: bold;
+  text-align: center;
+  margin-top: 25px;;
+}
