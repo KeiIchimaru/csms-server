@@ -6,8 +6,28 @@ const { InternalServerError } = require(global.base_path+'/lib/error');
    *                    API処理                             
    ************************************************************* */
 // composition
+router.get('/composition/tournament', (req, res, next) => {
+  let t = global.tournament.composition.tournament;
+  res.json({
+    performanceType: t.performance_type,
+    bibsType: t.bibs_type,
+    notices: JSON.parse(t.notices)
+  });
+});
 router.get('/composition/tournamentEvent', (req, res, next) => {
   res.json(global.tournament.composition.tournament_event);
+});
+router.get('/composition/participatingPlayers/:gender', (req, res, next) => {
+  global.tournament.composition.getParticipatingPlayers({
+    gender: parseInt(req.params.gender),
+  }
+  ).then(results => {
+    res.json(results);
+  }).catch(err => {
+    console.log(req.originalUrl, err.name == InternalServerError.name ? err : err.message);
+    // ここでレスポンスを返さないとUnhandledPromiseRejectionWarningとなります。
+    res.status(err.status || 500).json({ error: err.message });
+  });
 });
 router.get('/composition/participatingPlayers/:gender/:subdivision', (req, res, next) => {
   global.tournament.composition.getParticipatingPlayers({

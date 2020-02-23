@@ -24,7 +24,7 @@ db.getPool().then(pool => {
 }).then(management => {
   global.tournament.management = management;
   if(global.tournament.composition.days == 2){
-    global.tournament.management.day = 1;
+    global.tournament.management.day = 2;
   }
   // Express-session setup
   const cookieParser = require('cookie-parser');
