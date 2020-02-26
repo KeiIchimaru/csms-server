@@ -1,0 +1,19 @@
+{
+  "name": "TaisouWeb",
+  "short_name": "TaisouWeb",
+  "start_url": ".",
+  "icons": [
+    {
+      "src": "/images/icon-taisou-192.png",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "/images/icon-taisou-512.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "display": "fullscreen",
+  "orientation": "landscape"
+}
