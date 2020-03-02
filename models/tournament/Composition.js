@@ -1,3 +1,4 @@
+const { setTournamentId } = require("../../lib/database/utils")
 const { copyDict } = require("../../lib/utils");
 
 async function _getTournament(conn) {
@@ -75,6 +76,7 @@ class Composition {
   static async getInstance(obj=null) {
     if(!obj) { obj = new Composition(); }
     let conn = await global.pool.getConnection();
+    await setTournamentId(conn);
     obj._tournament = await _getTournament(conn);
     obj._tournament_event = await _getTournamentEvent(conn);
     obj._entry_organization = await _getEntryOrganization(conn);
@@ -101,6 +103,7 @@ class Composition {
   // DBアクセスメソッド
   async getParticipatingPlayers({ gender, subdivision, group, bibs } = {}) {
     let conn = await global.pool.getConnection();
+    await setTournamentId(conn);
     const results = await _getParticipatingPlayers(conn, { gender, subdivision, group, bibs });
     await global.pool.releaseConnection(conn);
     return results;

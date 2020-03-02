@@ -1,4 +1,4 @@
-const { InternalServerError } = require(global.base_path+'/lib/error');
+const { setTournamentId } = require("../../lib/database/utils")
 
 async function _getParticipatingPlayerEventOrder(conn, day, gender, classification, event) {
   let sql = 'SELECT * FROM viewParticipatingPlayerEventOrder where s_acting_day = ? and s_gender = ? and s_classification = ? and a_event_id = ?';
@@ -29,6 +29,7 @@ class Management {
   // DBアクセスメソッド
   async getParticipatingPlayerEventOrder(day, gender, classification, event) {
     let conn = await global.pool.getConnection();
+    await setTournamentId(conn);
     const results = await _getParticipatingPlayerEventOrder(conn, day, gender, classification, event);
     await global.pool.releaseConnection(conn);
     return results;

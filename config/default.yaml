@@ -9,3 +9,5 @@ socketPath: /var/run/mysqld/mysqld.sock
 cookieSecret: zxcvbnm
 cookieMaxage: 30
 cookieSecure: false
+
+tournamentId: 1

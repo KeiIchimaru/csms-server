@@ -8,6 +8,8 @@ const createError = require('http-errors');
 const app = express();
 
 global.base_path = __dirname;
+global.tournamentId = conf.tournamentId;
+
 const { InternalServerError } = require(global.base_path+'/lib/error');
 
 // mysql setup
