@@ -124,20 +124,18 @@ class Composition {
         event_id,\
         classification,\
         gender,\
-        entry_organization_id,\
         bibs,\
         event_time,\
         event_score,\
         constitution,\
         remarks\
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
       params = [
         this._tournament.id,
         h.player,
         h.event,
         h.classification,
         h.gender,
-        h.entry_organization_id,
         h.bibs,
         event_time,
         event_score,
