@@ -1,5 +1,8 @@
 const express = require('express');
 const router = express.Router();
+const createError = require('http-errors');
+
+const { fmtDateYMDHMS } = require(global.base_path+'/lib/utils');
 const controllerUtils = require(global.base_path+'/lib/controller/utils');
 const accountUtils = require(global.base_path+'/lib/account/utils');
 const { SystemInitializeError } = require(global.base_path+'/lib/error');
@@ -9,7 +12,7 @@ const SelectDay = require(global.base_path+'/controllers/admin/selectDay');
 
 // 運営管理メニュー
 const renderMenu = (req, res) => {
-  res.render(base+'/index', { title: '運営管理メニュー', error: req.flash('error') });
+  res.render(base+'/index', { title: '運営管理メニュー', error: req.flash('error'), message: req.flash('message') });
 }
 // 管理者でログインしているかを全ての要求に対してチェックする。
 router.all('*', accountUtils.isAdminAuthenticated, (req, res, next) => {
@@ -28,7 +31,7 @@ router.all('*', accountUtils.isAdminAuthenticated, (req, res, next) => {
       controllerUtils.deleteValues(req, viewName);
       res.render(base+viewName, selectDay.locals);
     }
-  }else{
+  } else {
     throw new SystemInitializeError();
   }
 });
@@ -38,6 +41,26 @@ router.all('*', accountUtils.isAdminAuthenticated, (req, res, next) => {
    ************************************************************* */
 router.get('/', (req, res, next) => {
   renderMenu(req, res);
+});
+router.get('/standingsIndividualEvent', (req, res, next) => {
+  global.tournament.management.standingsIndividualEvent()
+  .then(() => {
+    let now = new Date();
+    req.flash('message', `個人種目別順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    renderMenu(req, res);
+  }, (error) => {
+    next(createError(500, error.message));
+  });
+});
+router.get('/standingsIndividualAllRound', (req, res, next) => {
+  global.tournament.management.standingsIndividualAllRound()
+  .then(() => {
+    let now = new Date();
+    req.flash('message', `個人総合順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    renderMenu(req, res);    
+  }, (error) => {
+    next(createError(500, error.message));
+  });
 });
 
 

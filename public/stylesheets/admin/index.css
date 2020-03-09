@@ -1,0 +1,24 @@
+@charset "utf-8";
+/* CSS Document */
+
+.main-article {
+    font-size: 2.0rem;
+    width: 80%;
+    margin-top: 30px;;
+    margin-left: auto;
+    margin-right: auto;
+}
+.left-article {
+    width: 50%;
+    padding-left: 10px;
+}
+.right-article {
+    width: 50%;
+    padding-left: 10px;
+}
+.left-article div, .right-article div {
+    margin-bottom: 20px;
+}
+.main-article button {
+    width: 80%;
+}

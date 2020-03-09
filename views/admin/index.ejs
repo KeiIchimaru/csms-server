@@ -2,17 +2,25 @@
 <html>
   <head>
     <%- include('../include/head') -%>
-    <link rel='stylesheet' href='/stylesheets/admin/selectDay.css' />
+    <link rel='stylesheet' href='/stylesheets/admin/index.css' />
   </head>
   <body>
     <%- include('../include/header') -%>
     <main class="page-main">
       <article class="main-article">
-        ここに印刷メニューを表示します。
+        <div class="left-article">
+          <div>
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=location.protocol+'//'+location.host+'/admin/standingsIndividualEvent'" >個人種目別順位作成</button>
+          </div>
+          <div>
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=location.protocol+'//'+location.host+'/admin/standingsIndividualAllRound'" >個人総合順位作成</button>
+          </div>
+        </div>
+        <div class="right-article">
+
+        </div>
       </article>
-      <section class="message-container">
-        <p class="error"><%= error %></p>
-      </section>
+      <%- include('../include/message') %>
     </main>  
     <%- include('../include/footer') %>
   </body>

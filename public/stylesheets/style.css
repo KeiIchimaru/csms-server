@@ -22,6 +22,10 @@ a {
 .message-container {
 	text-align: center;
 }
+.message {
+  color: blue;
+  font-weight: bold;
+}
 .error {
   color: red;
   font-weight: bold;
