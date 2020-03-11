@@ -1,3 +1,20 @@
-<h1><%= message %></h1>
-<h2><%= error.status %></h2>
-<pre><%= error.stack %></pre>
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf8">
+    <meta name="viewport" content="minimum-scale=1, initial-scale=1, width=device-width, shrink-to-fit=no" />
+    <link rel='stylesheet' href='/stylesheets/style.css' />
+    <script type="text/javascript" src="/javascripts/utils.js" charset="uft-8"></script>
+  </head>
+  <body>
+    <main class="error-page">
+        <h1><%= message %></h1>
+        <h2><%= error.status %></h2>
+        <pre><%= error.stack %></pre>
+        <div class="text-center">
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=location.protocol+'//'+location.host" >Login</button>
+        </div>
+    </main>  
+    <%- include('./include/footer') %>
+  </body>
+</html>

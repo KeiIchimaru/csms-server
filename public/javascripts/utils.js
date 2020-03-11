@@ -12,3 +12,7 @@ var fmtDateYMDHMS = function (value) {
     let result = fmtDateYMD(value) + " " + H + ":" + M + ":" + S;
     return result;
 };
+
+var getLocation = function (href) {
+    return location.protocol + '//' + location.host + href;
+}

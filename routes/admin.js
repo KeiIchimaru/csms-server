@@ -1,8 +1,9 @@
 const express = require('express');
 const router = express.Router();
-const createError = require('http-errors');
-
-const { fmtDateYMDHMS } = require(global.base_path+'/lib/utils');
+const {
+  fmtDateYMDHMS,
+  internalServerError
+} = require(global.base_path+'/lib/utils');
 const controllerUtils = require(global.base_path+'/lib/controller/utils');
 const accountUtils = require(global.base_path+'/lib/account/utils');
 const { SystemInitializeError } = require(global.base_path+'/lib/error');
@@ -49,7 +50,7 @@ router.get('/standingsIndividualEvent', (req, res, next) => {
     req.flash('message', `個人種目別順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
     renderMenu(req, res);
   }, (error) => {
-    next(createError(500, error.message));
+    next(internalServerError(error));
   });
 });
 router.get('/standingsIndividualAllRound', (req, res, next) => {
@@ -59,7 +60,27 @@ router.get('/standingsIndividualAllRound', (req, res, next) => {
     req.flash('message', `個人総合順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
     renderMenu(req, res);    
   }, (error) => {
-    next(createError(500, error.message));
+    next(internalServerError(error));
+  });
+});
+router.get('/standingsTeamCompetition', (req, res, next) => {
+  global.tournament.management.standingsTeamCompetition()
+  .then(() => {
+    let now = new Date();
+    req.flash('message', `団体総合順位(4種目)作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    renderMenu(req, res);    
+  }, (error) => {
+    next(internalServerError(error));
+  });
+});
+router.get('/standingsTeamCompetition30', (req, res, next) => {
+  global.tournament.management.standingsTeamCompetition30()
+  .then(() => {
+    let now = new Date();
+    req.flash('message', `団体総合順位(3種目)作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    renderMenu(req, res);    
+  }, (error) => {
+    next(internalServerError(error));
   });
 });
 

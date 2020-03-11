@@ -1,5 +1,6 @@
 const {
   setTournamentId,
+  KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION,
   CLASSIFICATION_INDIVIDUAL_EVENT,
   CLASSIFICATION_INDIVIDUAL_ALLROUND,
   CLASSIFICATION_TEAM_COMPETITION,
@@ -21,7 +22,7 @@ async function _getParticipatingPlayerEventOrder(conn, day, gender, classificati
   return results;
 }
 async function _getTournamentEvents(conn, { gender, classification, event } = {}) {
-  let sql_where = null;
+  let sql_where = '';
   let params = [];
   if(!(gender === undefined) && gender) {
     sql_where = ' WHERE gender_id = ?';
@@ -41,7 +42,7 @@ async function _getTournamentEvents(conn, { gender, classification, event } = {}
     }
     params.push(event);
   }
-  let sql = 'SELECT * FROM viewTournamentEvent' + (sql_where ? sql_where : '');
+  let sql = 'SELECT * FROM viewTournamentEvent' + sql_where;
   sql += ' ORDER BY gender_id, classification_id, sequence';
   const results = await conn.query(sql, params);
   return results;
@@ -51,6 +52,19 @@ function _getEvent(tournamentEvents, event_id) {
     if(tournamentEvents[j].event_id == event_id) return tournamentEvents[j];
   }
   throw new InternalServerError(`Not fund event(${event_id})`);
+}
+async function _insertStandings(conn, params) {
+  if(params[5] != null) params[5] = round(params[5], 10**4);
+  let sql = 'INSERT INTO standings(\
+    tournament_id,\
+    classification,\
+    gender,\
+    event,\
+    player_or_organization_id,\
+    event_score, lowest_score,\
+    event_time, lowest_time,\
+    constitution) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
+  await conn.query(sql, params);  
 }
 // 個人種目別
 async function _standingsIndividualEvent(conn, event) {
@@ -124,44 +138,45 @@ async function _standingsIndividualEvent(conn, event) {
 }
 // 個人総合
 async function _standingsIndividualAllRound(conn, { gender, classification, events } = {} ) {
-  let event_time;
-  let lowest_time;
-  let event_score;
-  let lowest_score;
-  let constitution;
-  function __initializePlayer() {
-    event_time = null;
-    lowest_time = null;
-    event_score = null;
-    lowest_score = null;
-    constitution = {};
-  }
-  async function __insertStandings(params) {
-    params[5] = round(params[5], 10**4);
-    let sql = 'INSERT INTO standings(\
-      tournament_id,\
-      classification,\
-      gender,\
-      event,\
-      player_or_organization_id,\
-      event_score, lowest_score,\
-      event_time, lowest_time,\
-      constitution) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
-    await conn.query(sql, params);  
-  }
   const t = global.tournament.composition.tournament;
   // 現在のデータ削除
   let sql = 'DELETE FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ?';
-  let params = [ t.id, classification, gender ];
+  let params = [ t.id, CLASSIFICATION_INDIVIDUAL_ALLROUND, gender ];
   await conn.query(sql, params);
   // 競技情報の取得
-  const tournamentEvents = await _getTournamentEvents(conn, gender, classification, events);
-  // 採点結果の取得(個人種目別の処理が終わっていること)
-  sql = 'SELECT * FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ? AND event IN (?)';
-  sql += ' ORDER BY player_or_organization_id';
-  params = [ t.id, CLASSIFICATION_INDIVIDUAL_EVENT, gender, events ];
+  const tournamentEvents = await _getTournamentEvents(conn, { gender, classification, event: events });
+  // 採点結果の取得
+  if(t.performance_type == KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION) {
+    sql = 'SELECT * FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ? AND event IN (?)';
+    sql += ' ORDER BY player_or_organization_id';
+    params = [ t.id, CLASSIFICATION_INDIVIDUAL_EVENT, gender, events ];  
+  } else {
+    sql = 'SELECT \
+      tournament_id,\
+      classification,\
+      gender,\
+      event_id AS event,\
+      player_id AS player_or_organization_id,\
+      event_score,\
+      event_time\
+      FROM tournament_event_result WHERE tournament_id = ? AND classification = ? AND gender = ? AND event_id IN (?)';
+    sql += ' ORDER BY player_id';
+    params = [ t.id, classification, gender, events ];  
+  }
   const results = await conn.query(sql, params);
   if(results.length > 0) {
+    let event_time;
+    let lowest_time;
+    let event_score;
+    let lowest_score;
+    let constitution;
+    function __initializePlayer() {
+      event_time = null;
+      lowest_time = null;
+      event_score = null;
+      lowest_score = null;
+      constitution = {};
+    }  
     // 選手別総合得点の計算
     let player_id = results[0].player_or_organization_id;
     __initializePlayer();
@@ -169,7 +184,7 @@ async function _standingsIndividualAllRound(conn, { gender, classification, even
       const row = results[j];
       if(player_id != row.player_or_organization_id) {
         params = [ t.id, classification, gender, 0, player_id, event_score, lowest_score, event_time, lowest_time, JSON.stringify(constitution) ];
-        await __insertStandings(params);
+        await _insertStandings(conn, params);
         player_id = row.player_or_organization_id;
         __initializePlayer();
       }
@@ -183,7 +198,7 @@ async function _standingsIndividualAllRound(conn, { gender, classification, even
               lowest_time = row.event_time;
             }
           }        
-          constitution[row.event] = [ row.event_time, row.rank ];
+          constitution[row.event] = [ row.event_time, row.rank ? row.rank : null ];
           break;
         case MEASUREMENT_SCORE:
           if(event_score == null) {
@@ -194,19 +209,30 @@ async function _standingsIndividualAllRound(conn, { gender, classification, even
               lowest_score = row.event_score;
             }
           }
-          constitution[row.event] = [ row.event_score, row.rank ];
+          constitution[row.event] = [ row.event_score, row.rank ? row.rank : null ];
           break;
         default:
           throw new InternalServerError(`Unsupported measurement(${_getEvent(tournamentEvents, row.event).measurement})`);
       }
     }
-    params = [ t.id, classification, gender, 0, player_id, event_score, lowest_score, event_time, lowest_time, JSON.stringify(constitution) ];
-    await __insertStandings(params);  
+    params = [
+      t.id,
+      CLASSIFICATION_INDIVIDUAL_ALLROUND,
+      gender,
+      0,
+      player_id,
+      event_score,
+      lowest_score,
+      event_time,
+      lowest_time,
+      JSON.stringify(constitution)
+    ];
+    await _insertStandings(conn, params);  
   }
   // 順位の決定
   sql = 'SELECT * FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ?';
   sql += ' ORDER BY event_time ASC, lowest_time DESC,  event_score DESC, lowest_score ASC';
-  params = [ t.id, classification, gender ];
+  params = [ t.id, CLASSIFICATION_INDIVIDUAL_ALLROUND, gender ];
   const standings = await conn.query(sql, params);
   if(standings.length > 0) {
     let rank = 1;
@@ -230,19 +256,164 @@ async function _standingsIndividualAllRound(conn, { gender, classification, even
   }
 }
 // 団体総合
-async function _standingsTeamCompetition(conn) {
-
-  /*
-    SELECT affiliation_organization_name, event_name, player_name, event_score 
-    FROM viewStandingsIndividualEvent 
-    WHERE gender_id = 1 AND entry_organization_type_id < 90 
-    ORDER BY entry_organization_id, event_id, event_score DESC;
-  */
+async function _standingsTeamCompetition(conn, classification, gender, events) {
+  const t = global.tournament.composition.tournament;
+  // 現在のデータ削除
+  let sql = 'DELETE FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ?';
+  let params = [ t.id, classification, gender ];
+  await conn.query(sql, params);
+  // 競技情報の取得
+  let c;
+  switch(t.performance_type) {
+    case KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION:
+      c = CLASSIFICATION_INDIVIDUAL_ALLROUND;
+      break;
+    default:
+      c = CLASSIFICATION_TEAM_COMPETITION;
+  }
+  const tournamentEvents = await _getTournamentEvents(conn, { gender, classification: c, event: events });
+  if(tournamentEvents.length != events.length) {
+    throw new InternalServerError(`Some event do not exist in tournament_event. (gender:${gender}, classification:${c}, event:${events})`);
+  }
+  // 採点結果の取得
+  if(t.performance_type == KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION) {
+    sql = 'SELECT * FROM viewStandingsIndividualEvent WHERE gender_id = ? AND entry_organization_type_id < 90 AND event_id IN (?)';
+    sql += ' ORDER BY entry_organization_id ASC, event_id ASC, event_score DESC, event_time ASC';
+    params = [ gender, events ];
+  } else {
+    sql = '';
+    params = [];
+  }
+  const results = await conn.query(sql, params);
+  if(results.length > 0) {
+    // 団体別総合得点の計算
+    let entry_organization_id;
+    let event_score;
+    let event_time;
+    let event_players;
+    let numbers;
+    let team_score;
+    let team_lowest_score;
+    let team_time;
+    let team_lowest_time;
+    let constitution;
+    function __initializeOrganization() {
+      event_score = null;
+      event_time = null;
+      event_players = {};
+      numbers = {};
+      team_score = null;
+      team_lowest_score = null;
+      team_time = null;
+      team_lowest_time = null;
+    }
+    async function __insertStandingsTeamCompetition() {
+      let check = true;
+      // 全ての競技で演技を行なっていること
+      for (let j = 0; j < tournamentEvents.length; j++) {
+        if(!numbers[tournamentEvents[j].event_id]) {
+          check = false;
+          console.log(`tournamentEvents check error (organization:${entry_organization_id}, event:${tournamentEvents[j].event_id})`);
+          break;
+        }
+      }
+      // 全ての競技で団体規程人数の選手が演技を行なっていること
+      for (let key in numbers) {
+        if(numbers[key] <  t.notices.minimumNumberOfOrganization) {
+          check = false;
+          console.log(`minimumNumberOfOrganization check error (organization:${entry_organization_id}, event:${key})`);
+          break;
+        }
+      }
+      if(check) {
+        if(event_score && Object.keys(event_score).length > 0) {
+          for (let key in event_score) {
+            team_score = (team_score ? team_score : 0) + event_score[key];
+            if(team_lowest_score == null || team_lowest_score > event_score[key]) {
+              team_lowest_score = event_score[key];
+            }
+          }
+          team_score = round(team_score, 10**4);
+          team_lowest_score = round(team_lowest_score, 10**4);
+        }
+        if(event_time && Object.keys(event_time).length > 0) {
+          for (let key in event_time) {
+            team_time = (team_time ? team_time : 0) + event_time[key];
+            if(team_lowest_time == null || team_lowest_time < event_time[key]) {
+              team_lowest_time = event_time[key];
+            }
+          }
+        }
+      }
+      constitution = { numbers, event_score, event_time, event_players };
+      params = [ t.id, classification, gender, 0, entry_organization_id, team_score, team_lowest_score, team_time, team_lowest_time, JSON.stringify(constitution) ];
+      await _insertStandings(conn, params);
+    }
+    __initializeOrganization();
+    entry_organization_id = results[0].entry_organization_id;
+    for(let j = 0; j < results.length; j++) {
+      let row = results[j];
+      if(entry_organization_id != row.entry_organization_id) {
+        await __insertStandingsTeamCompetition();
+        __initializeOrganization();
+        entry_organization_id = results[j].entry_organization_id;
+      }
+      numbers[row.event_id] = (numbers[row.event_id] ? numbers[row.event_id] + 1 : 1);
+      if(numbers[row.event_id] <= t.notices.minimumNumberOfOrganization) {
+        let val;
+        switch(_getEvent(tournamentEvents, row.event_id).measurement) {
+          case MEASUREMENT_TIME:
+            if(event_time == null) event_time = {}
+            event_time[row.event_id] = (event_time[row.event_id] ?  event_time[row.event_id] + row.event_time : row.event_time);
+            val = row.event_time;
+            break;
+          case MEASUREMENT_SCORE:
+            if(event_score == null) event_score = {}
+            event_score[row.event_id] = round((event_score[row.event_id] ? event_score[row.event_id] : 0) + row.event_score, 10**4);
+            val = row.event_score;
+            break;
+          default:
+            throw new InternalServerError(`Unsupported measurement(${_getEvent(tournamentEvents, row.event_id).measurement})`);
+        }
+        const player = [row.player_id, val, row.rank];
+        if(event_players[row.event_id]) {
+          event_players[row.event_id].push(player);
+        } else {
+          event_players[row.event_id] = [ player ];  
+        }
+      }
+    }
+    await __insertStandingsTeamCompetition();
+  }
+  // 順位の決定
+  sql = 'SELECT * FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ?';
+  sql += ' ORDER BY event_time ASC, lowest_time DESC,  event_score DESC, lowest_score ASC';
+  params = [ t.id, classification, gender ];
+  const standings = await conn.query(sql, params);
+  if(standings.length > 0) {
+    let rank = 1;
+    event_time = standings[0].event_time;
+    lowest_time = standings[0].lowest_time;
+    event_score = standings[0].event_score;
+    lowest_score = standings[0].lowest_score;
+    for(let j = 0; j < standings.length; j++) {
+      const row = standings[j];
+      if(row.event_time != null || row.event_score != null) {
+        if(event_time != row.event_time || lowest_time != row.lowest_time || event_score != row.event_score || lowest_score != row.lowest_score) {
+          rank = j + 1;
+          event_time = standings[j].event_time;
+          lowest_time = standings[j].lowest_time;
+          event_score = standings[j].event_score;
+          lowest_score = standings[j].lowest_score;
+        }
+        sql = 'UPDATE standings SET rank = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
+        params = [ rank, row.tournament_id, row.classification, row.gender, row.event, row.player_or_organization_id ];
+        await conn.query(sql, params);  
+      }
+    }  
+  }
 }
-// 団体総合(国体選出)
-async function _standingsTeamCompetition30(conn) {
 
-}
 class Management {
   static async getInstance(obj=null) {
     if(!obj) { obj = new Management(); }
@@ -275,9 +446,15 @@ class Management {
     const t = global.tournament.composition.tournament;
     await setTournamentId(conn);
     // 対象競技の抽出
-    // performance_type(1:個人総合から種目別、団体順位を決定)
-    let classification = (t.performance_type == 1 ? CLASSIFICATION_INDIVIDUAL_ALLROUND : CLASSIFICATION_INDIVIDUAL_EVENT);
-    const events = await _getTournamentEvents(conn, gender, classification, event);
+    let classification;
+    switch(t.performance_type) {
+      case KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION:
+        classification = CLASSIFICATION_INDIVIDUAL_ALLROUND;
+        break;
+      default:
+        classification = CLASSIFICATION_INDIVIDUAL_EVENT;
+    }
+    const events = await _getTournamentEvents(conn, { gender, classification, event });
     // 順位表作成
     for(let j = 0; j < events.length; j++) {
       await _standingsIndividualEvent(conn, events[j]);
@@ -288,7 +465,7 @@ class Management {
     let conn = await global.pool.getConnection();
     await setTournamentId(conn);
     // 対象競技の抽出
-    const events = await _getTournamentEvents(conn, gender, CLASSIFICATION_INDIVIDUAL_ALLROUND);
+    const events = await _getTournamentEvents(conn, { gender, classification: CLASSIFICATION_INDIVIDUAL_ALLROUND });
     let target = [];
     if(events.length > 0) {
       let g = events[0].gender_id;
@@ -311,6 +488,52 @@ class Management {
       await _standingsIndividualAllRound(conn, target[j]);
     }
     await global.pool.releaseConnection(conn);
+  }
+  async standingsTeamCompetition() {
+    const conn = await global.pool.getConnection();
+    const t = global.tournament.composition.tournament;
+    await setTournamentId(conn);
+    // 対象とする性別、競技の設定
+    let classification;
+    switch(t.performance_type) {
+      case KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION:
+        classification = CLASSIFICATION_INDIVIDUAL_ALLROUND;
+        break;
+      default:
+        classification = CLASSIFICATION_TEAM_COMPETITION;
+    }
+    const results = await _getTournamentEvents(conn, { classification });
+    let genders = [];
+    let events = {};
+    for(let j = 0; j < results.length; j++) {
+      if(genders.indexOf(results[j].gender_id) == -1) {
+        genders.push(results[j].gender_id);
+      }
+      if(events[results[j].gender_id]) {
+        events[results[j].gender_id].push(results[j].event_id);
+      } else {
+        events[results[j].gender_id] = [ results[j].event_id ];
+      }
+    }
+    // 順位表作成
+    for(let j = 0; j < genders.length; j++) {
+      await _standingsTeamCompetition(conn, CLASSIFICATION_TEAM_COMPETITION, genders[j], events[genders[j]]);
+    }
+    await global.pool.releaseConnection(conn);  
+  }
+  async standingsTeamCompetition30() {
+    const conn = await global.pool.getConnection();
+    const t = global.tournament.composition.tournament;
+    await setTournamentId(conn);
+    // 対象とする性別、競技の設定
+    const genders = await conn.query('SELECT DISTINCT gender_id FROM viewTournamentEvent');
+    const events = t.notices.team3;
+    console.log(events);
+    // 順位表作成
+    for(let j = 0; j < genders.length; j++) {
+      await _standingsTeamCompetition(conn, CLASSIFICATION_TEAM_COMPETITION_30, genders[j].gender_id, events[genders[j].gender_id]);
+    }
+    await global.pool.releaseConnection(conn);  
   }
 };
 

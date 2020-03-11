@@ -11,7 +11,7 @@ router.get('/composition/tournament', (req, res, next) => {
   res.json({
     performanceType: t.performance_type,
     bibsType: t.bibs_type,
-    notices: JSON.parse(t.notices)
+    notices: t.notices
   });
 });
 router.get('/composition/tournamentEvent', (req, res, next) => {

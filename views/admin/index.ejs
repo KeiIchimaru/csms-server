@@ -10,10 +10,16 @@
       <article class="main-article">
         <div class="left-article">
           <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=location.protocol+'//'+location.host+'/admin/standingsIndividualEvent'" >個人種目別順位作成</button>
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsIndividualEvent')" >個人種目別順位作成</button>
           </div>
           <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=location.protocol+'//'+location.host+'/admin/standingsIndividualAllRound'" >個人総合順位作成</button>
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsIndividualAllRound')" >個人総合順位作成</button>
+          </div>
+          <div>
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsTeamCompetition')" >団体総合順位(4種目)作成</button>
+          </div>
+          <div>
+            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsTeamCompetition30')" >団体総合順位(3種目)作成</button>
           </div>
         </div>
         <div class="right-article">

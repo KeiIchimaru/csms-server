@@ -1,4 +1,8 @@
-const { setTournamentId } = require("../../lib/database/utils")
+const {
+  MEASUREMENT_TIME,
+  MEASUREMENT_SCORE,
+  setTournamentId,
+} = require("../../lib/database/utils");
 const { copyDict } = require("../../lib/utils");
 
 async function _getTournament(conn) {
@@ -78,6 +82,7 @@ class Composition {
     let conn = await global.pool.getConnection();
     await setTournamentId(conn);
     obj._tournament = await _getTournament(conn);
+    obj._tournament.notices = (obj._tournament.notices ? JSON.parse(obj._tournament.notices) : {});
     obj._tournament_event = await _getTournamentEvent(conn);
     obj._entry_organization = await _getEntryOrganization(conn);
     obj._entry_player = await _getEntryPlayer(conn);
@@ -114,8 +119,8 @@ class Composition {
     const results = await _getTournamentEventResult(conn, this._tournament.id, h.player, h.event, h.classification);
     let sql;
     let params;
-    let event_time =  (this._tournament.performance_type == 1 ? null : body.input.score);
-    let event_score = (this._tournament.performance_type == 1 ? body.input.score : null);
+    let event_time =  (h.measurement == MEASUREMENT_TIME  ? body.input.score : null);
+    let event_score = (h.measurement == MEASUREMENT_SCORE ? body.input.score : null);
     let remarks = null;
     if(results.length == 0) {
       sql = 'INSERT INTO tournament_event_result (\
