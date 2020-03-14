@@ -67,7 +67,7 @@ router.get('/standingsTeamCompetition', (req, res, next) => {
   global.tournament.management.standingsTeamCompetition()
   .then(() => {
     let now = new Date();
-    req.flash('message', `団体総合順位(4種目)作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    req.flash('message', `団体総合(4種目)順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
     renderMenu(req, res);    
   }, (error) => {
     next(internalServerError(error));
@@ -77,8 +77,18 @@ router.get('/standingsTeamCompetition30', (req, res, next) => {
   global.tournament.management.standingsTeamCompetition30()
   .then(() => {
     let now = new Date();
-    req.flash('message', `団体総合順位(3種目)作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    req.flash('message', `団体総合(3種目)順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
     renderMenu(req, res);    
+  }, (error) => {
+    next(internalServerError(error));
+  });
+});
+router.get('/standingsExcludingTop3Teams', (req, res, next) => {
+  global.tournament.management.standingsExcludingTop3Teams()
+  .then(() => {
+    let now = new Date();
+    req.flash('message', `団体総合(3種目)上位３チーム所属者を除く個人順位の作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+    renderMenu(req, res);
   }, (error) => {
     next(internalServerError(error));
   });

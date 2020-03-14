@@ -66,7 +66,48 @@ async function _insertStandings(conn, params) {
     constitution) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)';
   await conn.query(sql, params);  
 }
-// 個人種目別
+async function _standingsIndividualEventRank(conn, standings, sql) {
+  let rank = 1;
+  let event_time = standings[0].event_time;
+  let event_score = standings[0].event_score;
+  for(let j = 0; j < standings.length; j++) {
+    const row = standings[j];
+    if(row.event_time != null || row.event_score != null) {
+      if(event_time != row.event_time || event_score != row.event_score) {
+        rank = j + 1;
+        event_time = standings[j].event_time;
+        event_score = standings[j].event_score;
+      }
+      params = [ rank, row.tournament_id, row.classification, row.gender, row.event, row.player_or_organization_id ];
+      await conn.query(sql, params);
+    }
+  }  
+
+}
+async function _standingsIndividualAllRoundRank(conn, standings, sql) {
+  let rank = 1;
+  let event_time = standings[0].event_time;
+  let lowest_time = standings[0].lowest_time;
+  let event_score = standings[0].event_score;
+  let lowest_score = standings[0].lowest_score;
+  for(let j = 0; j < standings.length; j++) {
+    const row = standings[j];
+    if(row.event_time != null || row.event_score != null) {
+      if(event_time != row.event_time || lowest_time != row.lowest_time || event_score != row.event_score || lowest_score != row.lowest_score) {
+        rank = j + 1;
+        event_time = standings[j].event_time;
+        lowest_time = standings[j].lowest_time;
+        event_score = standings[j].event_score;
+        lowest_score = standings[j].lowest_score;
+      }
+      params = [ rank, row.tournament_id, row.classification, row.gender, row.event, row.player_or_organization_id ];
+      await conn.query(sql, params);
+    }
+  }  
+}
+/***************************************************************************
+  個人種目別順位
+****************************************************************************/
 async function _standingsIndividualEvent(conn, event) {
   const t = global.tournament.composition.tournament;
   // 現在のデータ削除
@@ -104,39 +145,17 @@ async function _standingsIndividualEvent(conn, event) {
   }
   // 順位の決定
   sql = 'SELECT * FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ?';
-  switch(event.measurement) {
-    case MEASUREMENT_TIME:
-      sql += ' ORDER BY event_time DESC';
-      break;
-    case MEASUREMENT_SCORE:
-      sql += ' ORDER BY event_score DESC';
-      break;
-  }
+  sql += ' ORDER BY event_time ASC, event_score DESC';
   params = [ t.id, CLASSIFICATION_INDIVIDUAL_EVENT, event.gender_id, event.event_id ];
   const standings = await conn.query(sql, params);
-  let rank = 0;
-  let old_value = null;
-  let val;
-  for(let j = 0; j < standings.length; j++) {
-    const row = standings[j];
-    switch(event.measurement) {
-      case MEASUREMENT_TIME:
-        val = row.event_time;
-        break;
-      case MEASUREMENT_SCORE:
-        val = row.event_score;
-        break;
-      }  
-    if(old_value == null || old_value != val) {
-      rank = j + 1;
-      old_value = val;
-    }
+  if(standings.length > 0) {
     sql = 'UPDATE standings SET rank = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
-    params = [ rank, row.tournament_id, row.classification, row.gender, row.event, row.player_or_organization_id ];
-    await conn.query(sql, params);
+    await _standingsIndividualEventRank(conn, standings, sql);
   }
 }
-// 個人総合
+/***************************************************************************
+  個人総合順位
+****************************************************************************/
 async function _standingsIndividualAllRound(conn, { gender, classification, events } = {} ) {
   const t = global.tournament.composition.tournament;
   // 現在のデータ削除
@@ -235,27 +254,13 @@ async function _standingsIndividualAllRound(conn, { gender, classification, even
   params = [ t.id, CLASSIFICATION_INDIVIDUAL_ALLROUND, gender ];
   const standings = await conn.query(sql, params);
   if(standings.length > 0) {
-    let rank = 1;
-    event_time = standings[0].event_time;
-    lowest_time = standings[0].lowest_time;
-    event_score = standings[0].event_score;
-    lowest_score = standings[0].lowest_score;
-    for(let j = 0; j < standings.length; j++) {
-      const row = standings[j];
-      if(event_time != row.event_time || lowest_time != row.lowest_time || event_score != row.event_score || lowest_score != row.lowest_score) {
-        rank = j + 1;
-        event_time = standings[j].event_time;
-        lowest_time = standings[j].lowest_time;
-        event_score = standings[j].event_score;
-        lowest_score = standings[j].lowest_score;
-      }
-      sql = 'UPDATE standings SET rank = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
-      params = [ rank, row.tournament_id, row.classification, row.gender, row.event, row.player_or_organization_id ];
-      await conn.query(sql, params);
-    }  
+    sql = 'UPDATE standings SET rank = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
+    await _standingsIndividualAllRoundRank(conn, standings, sql);
   }
 }
-// 団体総合
+/***************************************************************************
+  団体総合順位
+****************************************************************************/
 async function _standingsTeamCompetition(conn, classification, gender, events) {
   const t = global.tournament.composition.tournament;
   // 現在のデータ削除
@@ -391,29 +396,89 @@ async function _standingsTeamCompetition(conn, classification, gender, events) {
   params = [ t.id, classification, gender ];
   const standings = await conn.query(sql, params);
   if(standings.length > 0) {
-    let rank = 1;
-    event_time = standings[0].event_time;
-    lowest_time = standings[0].lowest_time;
-    event_score = standings[0].event_score;
-    lowest_score = standings[0].lowest_score;
-    for(let j = 0; j < standings.length; j++) {
-      const row = standings[j];
-      if(row.event_time != null || row.event_score != null) {
-        if(event_time != row.event_time || lowest_time != row.lowest_time || event_score != row.event_score || lowest_score != row.lowest_score) {
-          rank = j + 1;
-          event_time = standings[j].event_time;
-          lowest_time = standings[j].lowest_time;
-          event_score = standings[j].event_score;
-          lowest_score = standings[j].lowest_score;
-        }
-        sql = 'UPDATE standings SET rank = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
-        params = [ rank, row.tournament_id, row.classification, row.gender, row.event, row.player_or_organization_id ];
-        await conn.query(sql, params);  
-      }
-    }  
+    sql = 'UPDATE standings SET rank = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
+    await _standingsIndividualAllRoundRank(conn, standings, sql);
   }
 }
-
+/***************************************************************************
+  団体(3種目)上位３チームを除く個人順位
+****************************************************************************/
+async function _standingsExcludingTop3Teams(conn, gender) {
+  const t = global.tournament.composition.tournament;
+  // 団体(3種目)上位３チームの所属を取得する
+  let sql = 'SELECT * FROM standings WHERE tournament_id = ? AND classification = ? AND gender = ?';
+  sql += ' ORDER BY rank LIMIT 0, 3;'
+  let params = [ t.id, CLASSIFICATION_TEAM_COMPETITION_30, gender ];
+  const results = await conn.query(sql, params);
+  let top3 = [];
+  results.forEach(element => top3.push(element.player_or_organization_id));
+  // 対象競技の抽出
+  let classification;
+  switch(t.performance_type) {
+    case KANTO_JUNIOR_HIGH_SCHOOL_GYMNASTICS_COMPETITION:
+      classification = CLASSIFICATION_INDIVIDUAL_ALLROUND;
+      break;
+    default:
+      classification = CLASSIFICATION_INDIVIDUAL_EVENT;
+  }
+  const events = await _getTournamentEvents(conn, { gender, classification });
+  // 団体(3種目)上位３チーム所属選手を除く順位の決定
+  for(let j = 0; j < events.length; j++) {
+    // 種目別：現在のrank1クリア
+    sql = 'UPDATE standings SET rank1 = null WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ?';
+    params = [ t.id, CLASSIFICATION_INDIVIDUAL_EVENT, gender, events[j].event_id ];
+    await conn.query(sql, params);
+    // 種目別：順位の決定
+    sql = 'SELECT \
+      tournament_id,\
+      classification,\
+      gender_id AS gender,\
+      event_id AS event,\
+      player_id AS player_or_organization_id,\
+      event_score,\
+      lowest_score,\
+      event_time,\
+      lowest_time\
+    FROM viewStandingsIndividualEvent\
+    WHERE gender_id = ? AND event_id = ? AND entry_organization_id NOT IN (?)';
+    sql += ' ORDER BY event_time ASC, event_score DESC';
+    params = [ gender, events[j].event_id, top3 ];
+    const standings = await conn.query(sql, params);
+    if(standings.length > 0) {
+      sql = 'UPDATE standings SET rank1 = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
+      await _standingsIndividualEventRank(conn, standings, sql);
+    }
+  }
+  // 個人総合：現在のrank1クリア
+  sql = 'UPDATE standings SET rank1 = null WHERE tournament_id = ? AND classification = ? AND gender = ?';
+  params = [ t.id, CLASSIFICATION_INDIVIDUAL_ALLROUND, gender ];
+  await conn.query(sql, params);
+  // 個人総合：順位の決定
+  sql = 'SELECT \
+    tournament_id,\
+    classification,\
+    gender_id AS gender,\
+    0 AS event,\
+    player_id AS player_or_organization_id,\
+    event_score,\
+    lowest_score,\
+    event_time,\
+    lowest_time\
+  FROM viewStandingsIndividualAllRound\
+  WHERE gender_id = ? AND entry_organization_id NOT IN (?)';
+  sql += ' ORDER BY event_time ASC, lowest_time DESC, event_score DESC, lowest_score ASC';
+  params = [ gender, top3 ];
+  const standings = await conn.query(sql, params);
+  if(standings.length > 0) {
+    sql = 'UPDATE standings SET rank1 = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
+    await _standingsIndividualAllRoundRank(conn, standings, sql);
+  }
+}
+/***************************************************************************
+ *
+ *      クラス定義：Management
+ *
+ ***************************************************************************/
 class Management {
   static async getInstance(obj=null) {
     if(!obj) { obj = new Management(); }
@@ -532,6 +597,18 @@ class Management {
     // 順位表作成
     for(let j = 0; j < genders.length; j++) {
       await _standingsTeamCompetition(conn, CLASSIFICATION_TEAM_COMPETITION_30, genders[j].gender_id, events[genders[j].gender_id]);
+    }
+    await global.pool.releaseConnection(conn);  
+  }
+  async standingsExcludingTop3Teams() {
+    const conn = await global.pool.getConnection();
+    const t = global.tournament.composition.tournament;
+    await setTournamentId(conn);
+    // 対象とする性別の設定
+    const genders = await conn.query('SELECT DISTINCT gender_id FROM viewTournamentEvent');
+    // 順位表作成
+    for(let j = 0; j < genders.length; j++) {
+      await _standingsExcludingTop3Teams(conn, genders[j].gender_id);
     }
     await global.pool.releaseConnection(conn);  
   }
