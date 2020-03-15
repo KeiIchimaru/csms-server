@@ -318,7 +318,7 @@ async function _standingsTeamCompetition(conn, classification, gender, events) {
       for (let j = 0; j < tournamentEvents.length; j++) {
         if(!numbers[tournamentEvents[j].event_id]) {
           check = false;
-          console.log(`tournamentEvents check error (organization:${entry_organization_id}, event:${tournamentEvents[j].event_id})`);
+          console.log(`tournamentEvents check error (gender:${gender}, organization:${entry_organization_id}, event:${tournamentEvents[j].event_id})`);
           break;
         }
       }
@@ -326,7 +326,7 @@ async function _standingsTeamCompetition(conn, classification, gender, events) {
       for (let key in numbers) {
         if(numbers[key] <  t.notices.minimumNumberOfOrganization) {
           check = false;
-          console.log(`minimumNumberOfOrganization check error (organization:${entry_organization_id}, event:${key})`);
+          console.log(`minimumNumberOfOrganization check error (gender:${gender}, organization:${entry_organization_id}, event:${key})`);
           break;
         }
       }
@@ -593,7 +593,6 @@ class Management {
     // 対象とする性別、競技の設定
     const genders = await conn.query('SELECT DISTINCT gender_id FROM viewTournamentEvent');
     const events = t.notices.team3;
-    console.log(events);
     // 順位表作成
     for(let j = 0; j < genders.length; j++) {
       await _standingsTeamCompetition(conn, CLASSIFICATION_TEAM_COMPETITION_30, genders[j].gender_id, events[genders[j].gender_id]);

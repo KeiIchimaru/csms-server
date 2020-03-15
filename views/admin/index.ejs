@@ -3,6 +3,15 @@
   <head>
     <%- include('../include/head') -%>
     <link rel='stylesheet' href='/stylesheets/admin/index.css' />
+    <script type="text/javascript">
+      function do_command(command){
+        let href = '/admin/' + command;
+        document.getElementById("loading").style.top = 0;
+        document.getElementById("loading").style.left = 0;
+        document.getElementById("loading").style.display = "block"; 
+        location.href=getLocation(href);
+      }
+    </script>
   </head>
   <body>
     <%- include('../include/header') -%>
@@ -10,27 +19,39 @@
       <article class="main-article">
         <div class="left-article">
           <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsIndividualEvent')" >個人種目別順位作成</button>
+            <button type="button" className="ml-5 btn-secondary" onclick="do_command('standingsAll')" >順位作成</button>
+            <p class="standingsAll">
+              個人種目別、個人総合、団体総合(4種目)、団体総合(3種目)、団体総合(3種目)上位３チーム所属者を除く個人種目別、個人総合の順位データを作成します。<br/>
+              <span class="text-danger">古い順位データは削除される</span>ので、古い順位を保存する場合は順位表(EXCEL)で保存して下さい。
+            </p>
           </div>
-          <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsIndividualAllRound')" >個人総合順位作成</button>
-          </div>
-          <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsTeamCompetition')" >団体総合(4種目)順位作成</button>
-          </div>
-          <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsTeamCompetition30')" >団体総合(3種目)順位作成</button>
-          </div>
-          <div>
-            <button type="button" className="ml-5 btn-secondary" onclick="location.href=getLocation('/admin/standingsExcludingTop3Teams')" >個人順位(上位3団体除く)作成</button>
+          <div class="root-article collapse" id="root-article">
+            <div>
+              <button type="button" class="btn btn-outline-primary" onclick="do_command('standingsIndividualEvent')" >個人種目別順位作成</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-outline-primary" onclick="do_command('standingsIndividualAllRound')" >個人総合順位作成</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-outline-primary" onclick="do_command('standingsTeamCompetition')" >団体総合(4種目)順位作成</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-outline-primary" onclick="do_command('standingsTeamCompetition30')" >団体総合(3種目)順位作成</button>
+            </div>
+            <div>
+              <button type="button" class="btn btn-outline-primary" onclick="do_command('standingsExcludingTop3Teams')" >個人順位(上位3団体除く)作成</button>
+            </div>  
           </div>
         </div>
         <div class="right-article">
-
         </div>
       </article>
       <%- include('../include/message') %>
     </main>  
     <%- include('../include/footer') %>
+    <div class="secret-area">
+      <button type="button" data-toggle="collapse" data-target="#root-article" aria-expanded="true" aria-controls="root-article"></button>  
+    </div>
+    <%- include('../include/loading') %>
   </body>
 </html>

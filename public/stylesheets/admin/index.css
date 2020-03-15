@@ -22,3 +22,18 @@
 .main-article button {
     width: 80%;
 }
+.standingsAll {
+    width: 80%;
+    font-size: 0.8rem;
+    color: rgb(94, 94, 94);
+    padding-top: 10px;
+    padding-left: 20px;
+}
+.root-article {
+    font-size: 0.8rem;
+}
+.secret-area {
+    opacity: 0.0;
+    width: 10px;
+    margin: 0 auto;
+}
