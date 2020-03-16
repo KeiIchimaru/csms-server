@@ -16,7 +16,7 @@ const {
 
 async function _getParticipatingPlayerEventOrder(conn, day, gender, classification, event) {
   let sql = 'SELECT * FROM viewParticipatingPlayerEventOrder where s_acting_day = ? and s_gender = ? and s_classification = ? and a_event_id = ?';
-  sql += ' order by s_number ASC, a_sequence ASC, c_number ASC, p_sequence ASC';
+  sql += ' order by s_number ASC, a_sequence ASC, c_number ASC, p_sequence ASC, p_bibs ASC';
   let params = [ day, gender, classification, event ];
   const results = await conn.query(sql, params);
   return results;
