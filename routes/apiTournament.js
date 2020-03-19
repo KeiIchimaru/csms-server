@@ -107,4 +107,18 @@ router.get('/management/subdivisions/:gender/:classification/:event', (req, res,
     res.status(err.status || 500).json({ error: err.message });
   });
 });
+router.post('/management/setParticipatingPlayerSequence', (req, res, next) => {
+  global.tournament.management.setParticipatingPlayerSequence(
+    parseInt(req.body.competitionGroupId),
+    req.body.bibs,
+    req.body.sequence
+  ).then(() => {
+    res.status(200).send('OK');
+  }).catch(err => {
+    console.log(req.originalUrl, err.name == InternalServerError.name ? err : err.message);
+    // ここでレスポンスを返さないとUnhandledPromiseRejectionWarningとなります。
+    res.status(err.status || 500).json({ error: err.message });
+  });
+});
+
 module.exports = router;
