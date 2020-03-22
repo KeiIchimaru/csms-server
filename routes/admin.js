@@ -94,18 +94,32 @@ router.get('/standingsExcludingTop3Teams', (req, res, next) => {
   });
 });
 router.get('/standingsAll', (req, res, next) => {
-  global.tournament.management.standingsIndividualEvent()
-  .then(() => global.tournament.management.standingsIndividualAllRound())
-  .then(() => global.tournament.management.standingsTeamCompetition())
-  .then(() => global.tournament.management.standingsTeamCompetition30()) 
-  .then(() => global.tournament.management.standingsExcludingTop3Teams())
-  .then(() => {
-    let now = new Date();
-    req.flash('message', `全ての順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
-    renderMenu(req, res);
-  }).catch((error) => {
-    next(internalServerError(error));
-  });
+  const t = global.tournament.composition.tournament;
+  if(t.notices.team3) {
+    global.tournament.management.standingsIndividualEvent()
+    .then(() => global.tournament.management.standingsIndividualAllRound())
+    .then(() => global.tournament.management.standingsTeamCompetition())
+    .then(() => global.tournament.management.standingsTeamCompetition30())
+    .then(() => global.tournament.management.standingsExcludingTop3Teams())
+    .then(() => {
+      let now = new Date();
+      req.flash('message', `全ての順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+      renderMenu(req, res);
+    }).catch((error) => {
+      next(internalServerError(error));
+    });
+  } else {
+    global.tournament.management.standingsIndividualEvent()
+    .then(() => global.tournament.management.standingsIndividualAllRound())
+    .then(() => global.tournament.management.standingsTeamCompetition())
+    .then(() => {
+      let now = new Date();
+      req.flash('message', `全ての順位作成が終了しました。 at ${fmtDateYMDHMS(now)}`);
+      renderMenu(req, res);
+    }).catch((error) => {
+      next(internalServerError(error));
+    });
+  }
 });
 
 

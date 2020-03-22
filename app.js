@@ -21,6 +21,7 @@ db.getPool().then(pool => {
   console.log('Server got a connection pool now.');
   return Composition.getInstance();
 }).then(composition => {
+  console.log(`${composition.tournament.name} start`)
   global.tournament = { composition };
   return Management.getInstance();
 }).then(management => {
