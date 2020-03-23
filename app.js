@@ -8,7 +8,11 @@ const createError = require('http-errors');
 const app = express();
 
 global.base_path = __dirname;
-global.tournamentId = conf.tournamentId;
+if(process.argv.length == 3) {
+  global.tournamentId = parseInt(process.argv[2]);
+} else {
+  global.tournamentId = conf.tournamentId;
+}
 
 const { InternalServerError } = require(global.base_path+'/lib/error');
 

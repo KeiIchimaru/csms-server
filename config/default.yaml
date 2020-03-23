@@ -3,11 +3,11 @@ host: localhost
 port: 3306
 user: admin
 password: yamanash1
-database: tournamentDB2
+database: tournamentDB
 socketPath: /var/run/mysqld/mysqld.sock
 
 cookieSecret: zxcvbnm
 cookieMaxage: 30
 cookieSecure: false
 
-tournamentId: 2
+tournamentId: 1

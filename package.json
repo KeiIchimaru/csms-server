@@ -3,7 +3,9 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node ./bin/www"
+    "start": "node ./bin/www",
+    "start1": "node ./bin/www 1",
+    "start2": "node ./bin/www 2"
   },
   "dependencies": {
     "bcrypt": "^3.0.7",
