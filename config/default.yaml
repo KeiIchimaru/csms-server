@@ -3,7 +3,7 @@ host: localhost
 port: 3306
 user: admin
 password: yamanash1
-database: tournamentDB
+database: tournamentDB2
 socketPath: /var/run/mysqld/mysqld.sock
 
 cookieSecret: zxcvbnm
