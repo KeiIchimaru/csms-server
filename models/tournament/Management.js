@@ -441,9 +441,13 @@ async function _standingsExcludingTop3Teams(conn, gender) {
       event_time,\
       lowest_time\
     FROM viewStandingsIndividualEvent\
-    WHERE gender_id = ? AND event_id = ? AND entry_organization_id NOT IN (?)';
+    WHERE gender_id = ? AND event_id = ?';
+    params = [ gender, events[j].event_id ];
+    if(top3.length > 0) {
+      sql += ' AND entry_organization_id NOT IN (?)';
+      params.push(top3);
+    }
     sql += ' ORDER BY event_time ASC, event_score DESC';
-    params = [ gender, events[j].event_id, top3 ];
     const standings = await conn.query(sql, params);
     if(standings.length > 0) {
       sql = 'UPDATE standings SET rank1 = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
@@ -466,9 +470,13 @@ async function _standingsExcludingTop3Teams(conn, gender) {
     event_time,\
     lowest_time\
   FROM viewStandingsIndividualAllRound\
-  WHERE gender_id = ? AND entry_organization_id NOT IN (?)';
+  WHERE gender_id = ?';
+  params = [ gender ];
+  if(top3.length > 3) {
+    sql += ' AND entry_organization_id NOT IN (?)';
+    params.push(top3);
+  }
   sql += ' ORDER BY event_time ASC, lowest_time DESC, event_score DESC, lowest_score ASC';
-  params = [ gender, top3 ];
   const standings = await conn.query(sql, params);
   if(standings.length > 0) {
     sql = 'UPDATE standings SET rank1 = ? WHERE tournament_id = ? AND classification = ? AND gender = ? AND event = ? AND player_or_organization_id = ?';
